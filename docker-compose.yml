@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trade-journal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: trade_journal
+      POSTGRES_USER: trade_journal
+      POSTGRES_PASSWORD: trade_journal
+    ports:
+      - "5432:5432"
+    volumes:
+      - trade-journal-pg:/var/lib/postgresql/data
+
+volumes:
+  trade-journal-pg:

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TradeJournal.Api/TradeJournal.Api.csproj" />
+    <Project Path="src/TradeJournal.Data/TradeJournal.Data.csproj" />
+    <Project Path="src/TradeJournal.Services/TradeJournal.Services.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TradeJournal.Api.Tests/TradeJournal.Api.Tests.csproj" />
+    <Project Path="tests/TradeJournal.Services.Tests/TradeJournal.Services.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,39 @@
+# Build outputs
+**/bin/
+**/obj/
+**/dist/
+**/out-tsc/
+**/.angular/
+
+# Dependencies / package caches
+**/node_modules/
+.dotnet-home/
+.nuget/
+**/.nuget/packages/
+
+# IDE / editor / OS
+**/.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Local secrets / env
+*.env
+*.env.local
+appsettings.local.json
+appsettings.*.local.json
+secrets.json
+*.user.json
+
+# Test artifacts
+**/TestResults/
+**/coverage/
+*.trx
+*.log

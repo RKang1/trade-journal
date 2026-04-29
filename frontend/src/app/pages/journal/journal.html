@@ -1,0 +1,198 @@
+<div class="journal">
+	<header class="journal__header">
+		<h1>Trade Journal</h1>
+		@if (isAuthenticated() && user(); as currentUser) {
+			<div class="journal__user">
+				<span>{{ currentUser.displayName }}</span>
+				<button type="button" (click)="signOut()">Sign out</button>
+			</div>
+		}
+	</header>
+
+	@if (errorMessage(); as msg) {
+		<div role="alert" class="journal__error">{{ msg }}</div>
+	}
+
+	@if (!isAuthenticated()) {
+		<section class="journal__signin">
+			<p>Sign in with your Google account to start tracking trades.</p>
+			<div #googleButton class="journal__google-button" data-testid="google-button"></div>
+		</section>
+	} @else {
+		<section class="journal__form-section">
+			<h2>{{ editingTradeId() ? 'Edit trade' : 'New trade' }}</h2>
+			<form [formGroup]="tradeForm" (ngSubmit)="submit()" class="journal__form">
+				<label>
+					Symbol
+					<input type="text" formControlName="symbol" maxlength="16" data-testid="symbol-input" />
+				</label>
+				<label>
+					Side
+					<select formControlName="side" data-testid="side-select">
+						<option value="Long">Long</option>
+						<option value="Short">Short</option>
+					</select>
+				</label>
+				<label>
+					Entry at
+					<input type="datetime-local" formControlName="entryAt" data-testid="entry-at-input" />
+				</label>
+				<label>
+					Entry price
+					<input
+						type="number"
+						step="0.0001"
+						formControlName="entryPrice"
+						data-testid="entry-price-input"
+					/>
+				</label>
+				<label>
+					Quantity
+					<input
+						type="number"
+						step="0.0001"
+						formControlName="quantity"
+						data-testid="quantity-input"
+					/>
+				</label>
+				<label>
+					Fees
+					<input type="number" step="0.01" formControlName="fees" />
+				</label>
+				<label class="journal__form-wide">
+					Setup
+					<input type="text" formControlName="setup" maxlength="128" />
+				</label>
+				<label class="journal__form-wide">
+					Notes
+					<textarea formControlName="notes" rows="3" maxlength="4000"></textarea>
+				</label>
+
+				<div class="journal__form-actions">
+					<button
+						type="submit"
+						[disabled]="submitting() || tradeForm.invalid"
+						data-testid="submit-trade"
+					>
+						{{ editingTradeId() ? 'Save changes' : 'Add trade' }}
+					</button>
+					@if (editingTradeId()) {
+						<button type="button" (click)="cancelEdit()">Cancel edit</button>
+					}
+				</div>
+			</form>
+		</section>
+
+		<section class="journal__list-section">
+			<div class="journal__list-header">
+				<h2>Recent trades</h2>
+				<button type="button" (click)="refresh()" [disabled]="loadingTrades()">Refresh</button>
+			</div>
+
+			@if (loadingTrades()) {
+				<p>Loading...</p>
+			} @else if (!hasTrades()) {
+				<p data-testid="empty-state">No trades yet. Add your first one above.</p>
+			} @else {
+				<table class="journal__table" data-testid="trades-table">
+					<thead>
+						<tr>
+							<th>Symbol</th>
+							<th>Side</th>
+							<th>Status</th>
+							<th>Entry</th>
+							<th>Exit</th>
+							<th>Qty</th>
+							<th>Realized P&amp;L</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						@for (trade of tradesList(); track trade.id) {
+							<tr [attr.data-testid]="'trade-row-' + trade.id">
+								<td>{{ trade.symbol }}</td>
+								<td>{{ trade.side }}</td>
+								<td>{{ trade.status }}</td>
+								<td>
+									<div>{{ trade.entryPrice | number: '1.2-4' }}</div>
+									<small>{{ trade.entryAt | date: 'short' }}</small>
+								</td>
+								<td>
+									@if (trade.exitPrice !== null) {
+										<div>{{ trade.exitPrice | number: '1.2-4' }}</div>
+										<small>{{ trade.exitAt | date: 'short' }}</small>
+									} @else {
+										<span>—</span>
+									}
+								</td>
+								<td>{{ trade.quantity | number: '1.0-4' }}</td>
+								<td>
+									@if (trade.realizedPnl !== null) {
+										<span [attr.data-testid]="'trade-pnl-' + trade.id">{{
+											trade.realizedPnl | number: '1.2-2'
+										}}</span>
+									} @else {
+										—
+									}
+								</td>
+								<td class="journal__row-actions">
+									<button type="button" (click)="startEdit(trade)">Edit</button>
+									@if (trade.status === 'Open') {
+										<button
+											type="button"
+											(click)="startClose(trade)"
+											[attr.data-testid]="'close-' + trade.id"
+										>
+											Close
+										</button>
+									}
+								</td>
+							</tr>
+							@if (closingState()?.tradeId === trade.id) {
+								<tr class="journal__close-row">
+									<td colspan="8">
+										<form (ngSubmit)="confirmClose()" class="journal__close-form">
+											<label>
+												Exit at
+												<input
+													type="datetime-local"
+													[value]="closingState()!.exitAt"
+													(input)="updateClose('exitAt', $any($event.target).value)"
+												/>
+											</label>
+											<label>
+												Exit price
+												<input
+													type="number"
+													step="0.0001"
+													[value]="closingState()!.exitPrice"
+													(input)="updateClose('exitPrice', $any($event.target).valueAsNumber)"
+													data-testid="exit-price-input"
+												/>
+											</label>
+											<label>
+												Fees
+												<input
+													type="number"
+													step="0.01"
+													[value]="closingState()!.fees"
+													(input)="updateClose('fees', $any($event.target).valueAsNumber)"
+												/>
+											</label>
+											<div class="journal__form-actions">
+												<button type="submit" [disabled]="submitting()" data-testid="confirm-close">
+													Confirm close
+												</button>
+												<button type="button" (click)="cancelClose()">Cancel</button>
+											</div>
+										</form>
+									</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			}
+		</section>
+	}
+</div>
