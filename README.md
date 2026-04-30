@@ -3,6 +3,10 @@
 A multi-user day-trading journal. Angular frontend, ASP.NET Core (.NET 10) backend,
 PostgreSQL via EF Core, Google sign-in.
 
+This repo owns its own container deployment. On `rkserver`, it is expected to
+publish the frontend and API only on loopback and sit behind nginx at
+`journal.kangrc.com`.
+
 ## Prerequisites
 
 - .NET 10 SDK
@@ -26,6 +30,7 @@ frontend/
     core/                     api types, auth, http interceptor, services
     pages/journal/            single-page journal UI
 docker-compose.yml             app stack + optional local Postgres profile
+deploy.sh                      pull + rebuild helper
 ```
 
 `Api → Services → Data` is the only allowed dependency direction.
@@ -89,6 +94,13 @@ openssl rand -base64 48
 Then edit `frontend/src/environments/environment.ts` and put the **same**
 Google Client ID into `googleClientId`.
 
+For container-based deploys, copy `.env.example` to `.env` and fill in the same
+values there:
+
+```
+cp .env.example .env
+```
+
 ### 3. Apply database migrations
 
 ```
@@ -115,6 +127,37 @@ npm start
 
 The API listens on `http://localhost:5211`. The Angular dev server runs on
 `http://localhost:4200`.
+
+## Container deploy
+
+For a Bobby-style app-owned deploy:
+
+```bash
+cp .env.example .env
+# fill in TRADE_JOURNAL_DB_CONNECTION, TRADE_JOURNAL_GOOGLE_CLIENT_ID,
+# TRADE_JOURNAL_JWT_SIGNING_KEY, and the published port values you want
+
+docker compose up -d --build
+```
+
+Default container publishing is:
+
+- frontend: `127.0.0.1:14200 -> 80`
+- api: `127.0.0.1:15211 -> 8080`
+
+On `rkserver`, those defaults match the host nginx and DNS setup for
+`journal.kangrc.com`.
+
+For updates on a deployed host:
+
+```bash
+./deploy.sh
+```
+
+`deploy.sh` pulls the repo, then runs `docker compose up -d --build`. If a
+host wrapper exists one directory up at `../trade-journal-compose.sh`, it uses
+that instead so host-specific overrides can still hook in later without
+changing the app workflow.
 
 ## Tests
 

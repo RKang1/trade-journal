@@ -1,3 +1,5 @@
+name: trade-journal
+
 services:
   api:
     build:
@@ -10,8 +12,8 @@ services:
       Auth__GoogleClientId: "${TRADE_JOURNAL_GOOGLE_CLIENT_ID:-REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com}"
       Auth__JwtSigningKey: "${TRADE_JOURNAL_JWT_SIGNING_KEY:-REPLACE_WITH_AT_LEAST_32_BYTES_OF_RANDOM_ENTROPY_xxxxxxx}"
       Cors__AllowedOrigins__0: "${TRADE_JOURNAL_CORS_ORIGIN:-http://localhost:4200}"
-    expose:
-      - "8080"
+    ports:
+      - "${TRADE_JOURNAL_API_BIND:-127.0.0.1}:${TRADE_JOURNAL_API_PUBLISHED_PORT:-15211}:8080"
 
   frontend:
     build:
@@ -21,8 +23,8 @@ services:
     environment:
       TRADE_JOURNAL_API_BASE_URL: "${TRADE_JOURNAL_FRONTEND_API_BASE_URL:-http://localhost:5211}"
       TRADE_JOURNAL_GOOGLE_CLIENT_ID: "${TRADE_JOURNAL_GOOGLE_CLIENT_ID:-REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com}"
-    expose:
-      - "80"
+    ports:
+      - "${TRADE_JOURNAL_FRONTEND_BIND:-127.0.0.1}:${TRADE_JOURNAL_FRONTEND_PUBLISHED_PORT:-14200}:80"
     depends_on:
       - api
 
