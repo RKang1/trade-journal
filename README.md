@@ -159,6 +159,11 @@ host wrapper exists one directory up at `../trade-journal-compose.sh`, it uses
 that instead so host-specific overrides can still hook in later without
 changing the app workflow.
 
+When the shared Docker network used by the host-managed Postgres stack exists
+(default: `app-db`), `deploy.sh` also includes `docker-compose.shared-db.yml`
+so the API container can resolve `postgres` on that network. You can override
+the network name with `TRADE_JOURNAL_SHARED_DB_NETWORK`.
+
 ## Tests
 
 ```

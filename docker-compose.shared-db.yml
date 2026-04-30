@@ -1,0 +1,10 @@
+services:
+  api:
+    networks:
+      - default
+      - shared-db
+
+networks:
+  shared-db:
+    external: true
+    name: ${TRADE_JOURNAL_SHARED_DB_NETWORK:-app-db}
