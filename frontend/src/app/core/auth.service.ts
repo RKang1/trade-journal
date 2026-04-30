@@ -1,8 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { AuthResponse, UserProfile } from './api.types';
+import { appRuntimeConfig } from './runtime-config';
 
 const TOKEN_KEY = 'trade-journal.token';
 const USER_KEY = 'trade-journal.user';
@@ -10,7 +10,7 @@ const USER_KEY = 'trade-journal.user';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 	private readonly http = inject(HttpClient);
-	private readonly baseUrl = environment.apiBaseUrl;
+	private readonly baseUrl = appRuntimeConfig.apiBaseUrl;
 
 	private readonly tokenSignal = signal<string | null>(this.readToken());
 	private readonly userSignal = signal<UserProfile | null>(this.readUser());

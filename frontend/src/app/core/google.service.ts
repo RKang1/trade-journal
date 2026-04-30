@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../environments/environment';
+import { appRuntimeConfig } from './runtime-config';
 
 declare const google: {
 	accounts: {
@@ -66,7 +66,7 @@ export class GoogleIdentityService {
 	async renderButton(parent: HTMLElement, onCredential: (idToken: string) => void): Promise<void> {
 		await this.load();
 		google.accounts.id.initialize({
-			client_id: environment.googleClientId,
+			client_id: appRuntimeConfig.googleClientId,
 			callback: (response) => onCredential(response.credential),
 			ux_mode: 'popup',
 		});

@@ -1,0 +1,4 @@
+window.__TRADE_JOURNAL_CONFIG__ = {
+  apiBaseUrl: "${TRADE_JOURNAL_API_BASE_URL}",
+  googleClientId: "${TRADE_JOURNAL_GOOGLE_CLIENT_ID}"
+};

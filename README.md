@@ -25,7 +25,7 @@ frontend/
   src/app/
     core/                     api types, auth, http interceptor, services
     pages/journal/            single-page journal UI
-docker-compose.yml             local Postgres
+docker-compose.yml             app stack + optional local Postgres profile
 ```
 
 `Api → Services → Data` is the only allowed dependency direction.
@@ -38,7 +38,7 @@ Controllers never touch `DbContext`; services use it directly.
 If you have Docker:
 
 ```
-docker compose up -d postgres
+docker compose --profile local-db up -d postgres
 ```
 
 Otherwise install Postgres locally and create:

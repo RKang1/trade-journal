@@ -1,9 +1,11 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TradeJournal.Api;
+using TradeJournal.Data;
 using TradeJournal.Services;
 using TradeJournal.Services.Auth;
 
@@ -66,6 +68,15 @@ builder.Services.AddExceptionHandler<ServiceExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+	var db = scope.ServiceProvider.GetRequiredService<TradeJournalDbContext>();
+	if (db.Database.IsRelational())
+	{
+		await db.Database.MigrateAsync();
+	}
+}
 
 app.UseExceptionHandler();
 

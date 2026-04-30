@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { CloseTradeRequest, CreateTradeRequest, Trade, UpdateTradeRequest } from './api.types';
+import { appRuntimeConfig } from './runtime-config';
 
 @Injectable({ providedIn: 'root' })
 export class TradeService {
 	private readonly http = inject(HttpClient);
-	private readonly baseUrl = `${environment.apiBaseUrl}/api/trades`;
+	private readonly baseUrl = `${appRuntimeConfig.apiBaseUrl}/api/trades`;
 
 	list(): Observable<Trade[]> {
 		return this.http.get<Trade[]>(this.baseUrl);
