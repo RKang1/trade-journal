@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,11 @@ namespace TradeJournal.Services.Auth;
 
 public class AuthService : IAuthService
 {
+	private const string ApiTokenPrefix = "tj_pat_";
+	private const int ApiTokenBytes = 32;
+	private const int ApiTokenPreviewLength = 18;
+	private static readonly TimeSpan ApiTokenLastUsedWriteInterval = TimeSpan.FromMinutes(5);
+
 	private readonly TradeJournalDbContext _db;
 	private readonly IGoogleTokenVerifier _googleVerifier;
 	private readonly AuthOptions _options;
@@ -82,6 +88,98 @@ public class AuthService : IAuthService
 		return new UserProfileResult(user.Id, user.Email, user.DisplayName);
 	}
 
+	public async Task<IReadOnlyList<ApiTokenResult>> ListApiTokensAsync(Guid userId, CancellationToken cancellationToken)
+	{
+		return await _db.ApiTokens
+			.AsNoTracking()
+			.Where(token => token.UserId == userId && token.RevokedAt == null)
+			.OrderByDescending(token => token.CreatedAt)
+			.Select(token => new ApiTokenResult(
+				token.Id,
+				token.Name,
+				token.Prefix,
+				token.CreatedAt,
+				token.LastUsedAt))
+			.ToListAsync(cancellationToken);
+	}
+
+	public async Task<CreatedApiTokenResult> CreateApiTokenAsync(
+		Guid userId,
+		CreateApiTokenCommand command,
+		CancellationToken cancellationToken)
+	{
+		var name = NormalizeApiTokenName(command);
+		var userExists = await _db.Users.AnyAsync(user => user.Id == userId, cancellationToken);
+		if (!userExists)
+		{
+			throw new NotFoundException("User not found.");
+		}
+
+		var now = _clock.GetUtcNow();
+		var rawToken = CreateRawApiToken();
+		var apiToken = new ApiToken
+		{
+			Id = Guid.NewGuid(),
+			UserId = userId,
+			Name = name,
+			TokenHash = HashApiToken(rawToken),
+			Prefix = rawToken[..Math.Min(ApiTokenPreviewLength, rawToken.Length)],
+			CreatedAt = now,
+		};
+
+		_db.ApiTokens.Add(apiToken);
+		await _db.SaveChangesAsync(cancellationToken);
+
+		return new CreatedApiTokenResult(
+			rawToken,
+			new ApiTokenResult(apiToken.Id, apiToken.Name, apiToken.Prefix, apiToken.CreatedAt, apiToken.LastUsedAt));
+	}
+
+	public async Task RevokeApiTokenAsync(Guid userId, Guid tokenId, CancellationToken cancellationToken)
+	{
+		var token = await _db.ApiTokens
+			.FirstOrDefaultAsync(t => t.Id == tokenId && t.UserId == userId && t.RevokedAt == null, cancellationToken)
+			?? throw new NotFoundException("API token not found.");
+
+		token.RevokedAt = _clock.GetUtcNow();
+		await _db.SaveChangesAsync(cancellationToken);
+	}
+
+	public async Task<ApiTokenPrincipalResult?> AuthenticateApiTokenAsync(string token, CancellationToken cancellationToken)
+	{
+		if (string.IsNullOrWhiteSpace(token))
+		{
+			return null;
+		}
+
+		var rawToken = token.Trim();
+		if (!rawToken.StartsWith(ApiTokenPrefix, StringComparison.Ordinal))
+		{
+			return null;
+		}
+
+		var tokenHash = HashApiToken(rawToken);
+		var match = await _db.ApiTokens
+			.Include(apiToken => apiToken.User)
+			.FirstOrDefaultAsync(
+				apiToken => apiToken.TokenHash == tokenHash && apiToken.RevokedAt == null,
+				cancellationToken);
+
+		if (match is null)
+		{
+			return null;
+		}
+
+		var now = _clock.GetUtcNow();
+		if (match.LastUsedAt is null || now - match.LastUsedAt.Value >= ApiTokenLastUsedWriteInterval)
+		{
+			match.LastUsedAt = now;
+			await _db.SaveChangesAsync(cancellationToken);
+		}
+
+		return new ApiTokenPrincipalResult(match.UserId, match.User.Email, match.User.DisplayName, match.Id);
+	}
+
 	private (string token, DateTimeOffset expiresAt) IssueJwt(User user, DateTimeOffset issuedAt)
 	{
 		if (string.IsNullOrWhiteSpace(_options.JwtSigningKey))
@@ -102,6 +200,7 @@ public class AuthService : IAuthService
 			new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
 			new Claim(JwtRegisteredClaimNames.Email, user.Email),
 			new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
+			new Claim(AuthClaimTypes.AuthType, AuthClaimValues.Jwt),
 			new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 		};
 
@@ -117,5 +216,40 @@ public class AuthService : IAuthService
 
 		var token = new JwtSecurityTokenHandler().WriteToken(jwt);
 		return (token, expiresAt);
+	}
+
+	private static string NormalizeApiTokenName(CreateApiTokenCommand command)
+	{
+		var errors = new List<string>();
+		var name = (command.Name ?? string.Empty).Trim();
+
+		if (name.Length == 0)
+		{
+			errors.Add("API token name is required.");
+		}
+
+		if (name.Length > 100)
+		{
+			errors.Add("API token name must be 100 characters or fewer.");
+		}
+
+		if (errors.Count > 0)
+		{
+			throw new ValidationException(errors);
+		}
+
+		return name;
+	}
+
+	private static string CreateRawApiToken()
+	{
+		var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(ApiTokenBytes)).ToLowerInvariant();
+		return ApiTokenPrefix + secret;
+	}
+
+	private static string HashApiToken(string token)
+	{
+		var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+		return Convert.ToHexString(bytes).ToLowerInvariant();
 	}
 }

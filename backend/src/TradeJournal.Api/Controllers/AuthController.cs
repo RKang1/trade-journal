@@ -35,4 +35,33 @@ public class AuthController : ControllerBase
 		var profile = await _auth.GetProfileAsync(userId, cancellationToken);
 		return Ok(new UserProfileDto(profile.Id, profile.Email, profile.DisplayName));
 	}
+
+	[HttpGet("tokens")]
+	[Authorize(Policy = TradeJournalAuthentication.InteractiveUserPolicy)]
+	public async Task<ActionResult<IReadOnlyList<ApiTokenDto>>> ListTokens(CancellationToken cancellationToken)
+	{
+		var userId = User.GetUserId();
+		var tokens = await _auth.ListApiTokensAsync(userId, cancellationToken);
+		return Ok(tokens.Select(token => token.ToDto()).ToList());
+	}
+
+	[HttpPost("tokens")]
+	[Authorize(Policy = TradeJournalAuthentication.InteractiveUserPolicy)]
+	public async Task<ActionResult<CreateApiTokenResponse>> CreateToken(
+		[FromBody] CreateApiTokenRequest request,
+		CancellationToken cancellationToken)
+	{
+		var userId = User.GetUserId();
+		var created = await _auth.CreateApiTokenAsync(userId, new CreateApiTokenCommand(request.Name), cancellationToken);
+		return Ok(new CreateApiTokenResponse(created.Token, created.Details.ToDto()));
+	}
+
+	[HttpDelete("tokens/{id:guid}")]
+	[Authorize(Policy = TradeJournalAuthentication.InteractiveUserPolicy)]
+	public async Task<IActionResult> RevokeToken(Guid id, CancellationToken cancellationToken)
+	{
+		var userId = User.GetUserId();
+		await _auth.RevokeApiTokenAsync(userId, id, cancellationToken);
+		return NoContent();
+	}
 }

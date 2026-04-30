@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -25,8 +26,17 @@ builder.Services.AddOpenApi();
 builder.Services.AddTradeJournalServices(builder.Configuration);
 
 builder.Services
-	.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-	.AddJwtBearer();
+	.AddAuthentication(options =>
+	{
+		options.DefaultAuthenticateScheme = TradeJournalAuthentication.DynamicBearerScheme;
+		options.DefaultChallengeScheme = TradeJournalAuthentication.DynamicBearerScheme;
+	})
+	.AddPolicyScheme(TradeJournalAuthentication.DynamicBearerScheme, "Trade Journal bearer auth", options =>
+	{
+		options.ForwardDefaultSelector = TradeJournalAuthentication.SelectScheme;
+	})
+	.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme)
+	.AddScheme<AuthenticationSchemeOptions, ApiTokenAuthenticationHandler>(TradeJournalAuthentication.ApiTokenScheme, _ => { });
 
 builder.Services
 	.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -50,7 +60,15 @@ builder.Services
 		};
 	});
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy(TradeJournalAuthentication.InteractiveUserPolicy, policy =>
+	{
+		policy.RequireAuthenticatedUser();
+		policy.RequireAssertion(context =>
+			!context.User.HasClaim(claim => claim.Type == AuthClaimTypes.ApiTokenId));
+	});
+});
 
 builder.Services.AddCors(options =>
 {
@@ -72,7 +90,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
 	var db = scope.ServiceProvider.GetRequiredService<TradeJournalDbContext>();
-	if (db.Database.IsRelational())
+	if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
 	{
 		await db.Database.MigrateAsync();
 	}

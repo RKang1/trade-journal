@@ -180,10 +180,53 @@ cd frontend && npm test
 | ------ | --------------------------- | -------- |
 | POST   | `/api/auth/google`          | none     |
 | GET    | `/api/auth/me`              | bearer   |
+| GET    | `/api/auth/tokens`          | jwt only |
+| POST   | `/api/auth/tokens`          | jwt only |
+| DELETE | `/api/auth/tokens/{id}`     | jwt only |
 | GET    | `/api/trades`               | bearer   |
 | POST   | `/api/trades`               | bearer   |
 | PUT    | `/api/trades/{id}`          | bearer   |
 | POST   | `/api/trades/{id}/close`    | bearer   |
+
+## External client flow
+
+The trade endpoints already act on the authenticated user, so outside apps do
+not need any special integration path. The intended flow is:
+
+1. The user signs in to Trade Journal normally with Google and gets a journal
+   JWT from `POST /api/auth/google`.
+2. That JWT is used once to create a user-owned API token with
+   `POST /api/auth/tokens`.
+3. The outside app stores the returned API token and uses it as
+   `Authorization: Bearer <token>` when calling `/api/trades`.
+
+API tokens are scoped to the owning user, can be listed/revoked, and cannot be
+used to mint more API tokens.
+
+Example:
+
+```bash
+# 1. Create a long-lived API token for the current signed-in user.
+curl -X POST https://journal.example.com/api/auth/tokens \
+  -H "Authorization: Bearer <journal-jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Day trader sync" }'
+
+# 2. Use that API token from another app to create a trade for the same user.
+curl -X POST https://journal.example.com/api/trades \
+  -H "Authorization: Bearer tj_pat_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "NVDA",
+    "side": "Long",
+    "entryAt": "2026-04-30T22:00:00Z",
+    "entryPrice": 901.25,
+    "quantity": 1,
+    "fees": null,
+    "setup": "breakout",
+    "notes": "synced from day trader"
+  }'
+```
 
 ## Behavior rules (v1)
 

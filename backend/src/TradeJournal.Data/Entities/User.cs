@@ -10,4 +10,5 @@ public class User
 	public DateTimeOffset LastLoginAt { get; set; }
 
 	public ICollection<Trade> Trades { get; set; } = new List<Trade>();
+	public ICollection<ApiToken> ApiTokens { get; set; } = new List<ApiToken>();
 }

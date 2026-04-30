@@ -12,6 +12,7 @@ public class TradeJournalDbContext : DbContext
 
 	public DbSet<User> Users => Set<User>();
 	public DbSet<Trade> Trades => Set<Trade>();
+	public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
