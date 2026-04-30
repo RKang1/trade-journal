@@ -130,7 +130,7 @@ The API listens on `http://localhost:5211`. The Angular dev server runs on
 
 ## Container deploy
 
-For a Bobby-style app-owned deploy:
+For a reverse-proxy deploy with the app publishing to loopback:
 
 ```bash
 cp .env.example .env
