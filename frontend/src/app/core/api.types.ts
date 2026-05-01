@@ -49,3 +49,20 @@ export interface CloseTradeRequest {
 	exitPrice: number;
 	fees: number | null;
 }
+
+export interface ApiToken {
+	id: string;
+	name: string;
+	prefix: string;
+	createdAt: string;
+	lastUsedAt: string | null;
+}
+
+export interface CreateApiTokenRequest {
+	name: string;
+}
+
+export interface CreateApiTokenResponse {
+	token: string;
+	details: ApiToken;
+}

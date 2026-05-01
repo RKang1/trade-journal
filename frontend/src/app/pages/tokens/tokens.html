@@ -1,0 +1,116 @@
+<div class="tokens">
+	<header class="tokens__header">
+		<div>
+			<h1>API tokens</h1>
+			<p class="tokens__subtitle">
+				Use these tokens to let external apps create journal entries on your behalf via the
+				<code>/api/trades</code> endpoints.
+			</p>
+		</div>
+		<nav class="tokens__nav">
+			<a routerLink="/journal">&larr; Back to journal</a>
+		</nav>
+	</header>
+
+	@if (!isAuthenticated()) {
+		<section class="tokens__signin">
+			<p>You need to sign in before you can manage API tokens.</p>
+			<a routerLink="/journal">Go to sign-in</a>
+		</section>
+	} @else {
+		@if (errorMessage(); as msg) {
+			<div role="alert" class="tokens__error">{{ msg }}</div>
+		}
+
+		@if (newToken(); as created) {
+			<div class="tokens__new" data-testid="new-token-banner">
+				<h2>New token created</h2>
+				<p>
+					This is the only time the full token will be shown. Copy it and store it somewhere safe
+					&mdash; you will not be able to see it again.
+				</p>
+				<div class="tokens__new-row">
+					<code class="tokens__token">{{ created.token }}</code>
+					<button type="button" (click)="copyNewToken()" data-testid="copy-token">
+						{{ copied() ? 'Copied' : 'Copy' }}
+					</button>
+					<button type="button" (click)="dismissNewToken()">Done</button>
+				</div>
+			</div>
+		}
+
+		<section class="tokens__form-section">
+			<h2>Create a token</h2>
+			<form [formGroup]="tokenForm" (ngSubmit)="create()" class="tokens__form">
+				<label>
+					Name
+					<input
+						type="text"
+						formControlName="name"
+						maxlength="100"
+						placeholder="e.g. Day trader sync"
+						data-testid="token-name-input"
+					/>
+				</label>
+				<button
+					type="submit"
+					[disabled]="submitting() || tokenForm.invalid"
+					data-testid="create-token"
+				>
+					Create token
+				</button>
+			</form>
+		</section>
+
+		<section class="tokens__list-section">
+			<div class="tokens__list-header">
+				<h2>Active tokens</h2>
+				<button type="button" (click)="refresh()" [disabled]="loading()">Refresh</button>
+			</div>
+
+			@if (loading()) {
+				<p>Loading...</p>
+			} @else if (tokensList().length === 0) {
+				<p data-testid="tokens-empty">No active tokens.</p>
+			} @else {
+				<table class="tokens__table" data-testid="tokens-table">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Token</th>
+							<th>Created</th>
+							<th>Last used</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						@for (token of tokensList(); track token.id) {
+							<tr [attr.data-testid]="'token-row-' + token.id">
+								<td>{{ token.name }}</td>
+								<td><code>{{ token.prefix }}&hellip;</code></td>
+								<td>{{ token.createdAt | date: 'short' }}</td>
+								<td>
+									@if (token.lastUsedAt) {
+										{{ token.lastUsedAt | date: 'short' }}
+									} @else {
+										<span class="tokens__muted">never</span>
+									}
+								</td>
+								<td>
+									<button
+										type="button"
+										class="tokens__revoke"
+										(click)="revoke(token)"
+										[attr.data-testid]="'revoke-' + token.id"
+									>
+										Revoke
+									</button>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+		</section>
+	}
+</div>

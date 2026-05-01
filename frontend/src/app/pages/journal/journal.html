@@ -3,6 +3,7 @@
 		<h1>Trade Journal</h1>
 		@if (isAuthenticated() && user(); as currentUser) {
 			<div class="journal__user">
+				<a routerLink="/tokens" class="journal__nav-link" data-testid="nav-tokens">API tokens</a>
 				<span>{{ currentUser.displayName }}</span>
 				<button type="button" (click)="signOut()">Sign out</button>
 			</div>

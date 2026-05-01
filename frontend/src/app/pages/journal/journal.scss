@@ -33,6 +33,16 @@
 	}
 }
 
+.journal__nav-link {
+	color: #1d4ed8;
+	text-decoration: none;
+	font-size: 0.9rem;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
 .journal__error {
 	background: #fee2e2;
 	color: #991b1b;

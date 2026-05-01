@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { GoogleIdentityService } from '../../core/google.service';
@@ -26,7 +27,7 @@ interface CloseFormState {
 @Component({
 	selector: 'app-journal',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, DatePipe, DecimalPipe],
+	imports: [CommonModule, ReactiveFormsModule, RouterLink, DatePipe, DecimalPipe],
 	templateUrl: './journal.html',
 	styleUrl: './journal.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
