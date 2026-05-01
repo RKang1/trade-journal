@@ -126,6 +126,13 @@ public class TradeService : ITradeService
 		return ToResult(trade);
 	}
 
+	public async Task DeleteAsync(Guid userId, Guid tradeId, CancellationToken cancellationToken)
+	{
+		var trade = await GetOwnedTradeAsync(userId, tradeId, cancellationToken);
+		_db.Trades.Remove(trade);
+		await _db.SaveChangesAsync(cancellationToken);
+	}
+
 	private async Task<Trade> GetOwnedTradeAsync(Guid userId, Guid tradeId, CancellationToken cancellationToken)
 	{
 		var trade = await _db.Trades.FirstOrDefaultAsync(t => t.Id == tradeId, cancellationToken)

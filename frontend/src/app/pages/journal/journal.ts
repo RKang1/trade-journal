@@ -185,6 +185,29 @@ export class Journal implements AfterViewInit {
 		this.closingState.set({ ...current, [key]: value });
 	}
 
+	async deleteTrade(trade: Trade): Promise<void> {
+		const ok = typeof confirm === 'function'
+			? confirm(`Delete ${trade.symbol} trade? This cannot be undone.`)
+			: true;
+		if (!ok) return;
+		this.submitting.set(true);
+		this.errorMessage.set(null);
+		try {
+			await firstValueFrom(this.trades.delete(trade.id));
+			if (this.editingTradeId() === trade.id) {
+				this.cancelEdit();
+			}
+			if (this.closingState()?.tradeId === trade.id) {
+				this.closingState.set(null);
+			}
+			await this.refresh();
+		} catch (err) {
+			this.errorMessage.set(this.formatError(err));
+		} finally {
+			this.submitting.set(false);
+		}
+	}
+
 	async confirmClose(): Promise<void> {
 		const state = this.closingState();
 		if (!state) return;

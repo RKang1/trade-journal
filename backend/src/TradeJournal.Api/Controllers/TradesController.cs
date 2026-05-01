@@ -46,6 +46,14 @@ public class TradesController : ControllerBase
 		return Ok(result.ToDto());
 	}
 
+	[HttpDelete("{id:guid}")]
+	public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+	{
+		var userId = User.GetUserId();
+		await _trades.DeleteAsync(userId, id, cancellationToken);
+		return NoContent();
+	}
+
 	[HttpPost("{id:guid}/close")]
 	public async Task<ActionResult<TradeDto>> Close(
 		Guid id,

@@ -24,4 +24,8 @@ export class TradeService {
 	close(id: string, request: CloseTradeRequest): Observable<Trade> {
 		return this.http.post<Trade>(`${this.baseUrl}/${id}/close`, request);
 	}
+
+	delete(id: string): Observable<void> {
+		return this.http.delete<void>(`${this.baseUrl}/${id}`);
+	}
 }

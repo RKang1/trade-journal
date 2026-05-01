@@ -6,4 +6,5 @@ public interface ITradeService
 	Task<TradeResult> CreateAsync(Guid userId, CreateTradeCommand command, CancellationToken cancellationToken);
 	Task<TradeResult> UpdateAsync(Guid userId, Guid tradeId, UpdateTradeCommand command, CancellationToken cancellationToken);
 	Task<TradeResult> CloseAsync(Guid userId, Guid tradeId, CloseTradeCommand command, CancellationToken cancellationToken);
+	Task DeleteAsync(Guid userId, Guid tradeId, CancellationToken cancellationToken);
 }

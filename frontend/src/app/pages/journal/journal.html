@@ -147,6 +147,14 @@
 											Close
 										</button>
 									}
+									<button
+										type="button"
+										(click)="deleteTrade(trade)"
+										[disabled]="submitting()"
+										[attr.data-testid]="'delete-' + trade.id"
+									>
+										Delete
+									</button>
 								</td>
 							</tr>
 							@if (closingState()?.tradeId === trade.id) {
